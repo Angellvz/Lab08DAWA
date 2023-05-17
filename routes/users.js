@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-
+const bcrypt = require('bcryptjs');
 const router = express.Router();
 
 const userSchema = new mongoose.Schema({
@@ -17,9 +17,30 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const newUser = new User(req.body);
-  await newUser.save();
-  res.redirect('/users');
+  const { name, email, password } = req.body;
+
+  try {
+    // Generar el salt (valor aleatorio utilizado para el hash)
+    const salt = await bcrypt.genSalt(10);
+    
+    // Hash de la contraseña utilizando el salt
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    // Crear un nuevo usuario con la contraseña hasheada
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword // Guardar la contraseña hasheada en la base de datos
+    });
+    
+    // Guardar el usuario en la base de datos
+    await newUser.save();
+    
+    res.redirect('/users');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error al crear el usuario');
+  }
 });
 
 router.get('/edit/:id', async (req, res) => {
