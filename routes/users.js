@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
-
+const { check, validationResult } = require('express-validator');
 const userSchema = new mongoose.Schema({
   name: String,
   email: String,
@@ -16,8 +16,21 @@ router.get('/', async (req, res) => {
   res.render('index', { users });
 });
 
-router.post('/', async (req, res) => {
+router.post('/',
+  [
+    check('name').notEmpty().withMessage('El nombre es requerido'),
+    check('email').isEmail().withMessage('El email no es válido'),
+    check('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres')
+  ],
+ async (req, res) => {
   const { name, email, password } = req.body;
+
+  // Verificar si hay errores de validación
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    // Si hay errores, volver a renderizar la vista con los errores
+    return res.render('index', { errors: errors.array() });
+  }
 
   try {
     // Generar el salt (valor aleatorio utilizado para el hash)
